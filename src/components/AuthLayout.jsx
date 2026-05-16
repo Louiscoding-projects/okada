@@ -1,24 +1,23 @@
-import { motion } from 'motion/react'
+import React from "react";
 
-export default function AuthLayout({ children }) {
+export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-5 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-96 h-96 bg-neon-cyan/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-neon-magenta/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          initial={{ y: '-2px' }}
-          animate={{ y: '100vh' }}
-          transition={{ repeat: Infinity, duration: 4, ease: 'linear', repeatDelay: 2 }}
-          className="w-full h-px bg-gradient-to-r from-transparent via-neon-cyan/20 to-transparent"
-        />
-      </div>
-
-      <div className="relative z-10 w-full max-w-md">
-        {children}
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
+            <Icon className="w-7 h-7 text-primary-foreground" aria-hidden="true" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
+          {subtitle && <p className="text-muted-foreground mt-2">{subtitle}</p>}
+        </div>
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
+          {children}
+        </div>
+        {footer && (
+          <p className="text-center text-sm text-muted-foreground mt-6">{footer}</p>
+        )}
       </div>
     </div>
-  )
+  );
 }

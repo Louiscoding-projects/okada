@@ -1,35 +1,32 @@
-import { useState } from 'react'
+import React from 'react';
+import { motion } from 'motion/react';
+import { Star } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export default function StarRating({ value = 0, max = 5, interactive = false, onRate, size = 24 }) {
-  const [hovered, setHovered] = useState(0)
-  const display = hovered || value
-
+export default function StarRating({ rating, setRating, size = 32, interactive = true }) {
   return (
-    <div className="flex gap-1">
-      {Array.from({ length: max }).map((_, i) => {
-        const filled = i < display
-        return (
-          <button
-            key={i}
-            disabled={!interactive}
-            onClick={() => interactive && onRate?.(i + 1)}
-            onMouseEnter={() => interactive && setHovered(i + 1)}
-            onMouseLeave={() => interactive && setHovered(0)}
-            className="transition-transform hover:scale-110 disabled:cursor-default"
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{
-                fontSize: size,
-                color: filled ? '#ffc107' : 'var(--color-outline)',
-                fontVariationSettings: filled ? "'FILL' 1" : "'FILL' 0",
-              }}
-            >
-              star
-            </span>
-          </button>
-        )
-      })}
+    <div className="flex gap-1.5 items-center">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <motion.button
+          key={star}
+          type="button"
+          disabled={!interactive}
+          whileHover={interactive ? { scale: 1.2 } : {}}
+          whileTap={interactive ? { scale: 0.9 } : {}}
+          onClick={() => interactive && setRating?.(star)}
+          className="focus:outline-none"
+        >
+          <Star
+            size={size}
+            className={cn(
+              'transition-all duration-200',
+              star <= rating
+                ? 'fill-primary text-primary drop-shadow-[0_0_6px_hsl(var(--primary))]'
+                : 'text-muted-foreground/30'
+            )}
+          />
+        </motion.button>
+      ))}
     </div>
-  )
+  );
 }

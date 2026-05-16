@@ -1,202 +1,154 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
-import BottomNav from '../components/okada/BottomNav'
-import PulsingToggle from '../components/okada/PulsingToggle'
-import { useAuth } from '../context/AuthContext'
-import { signOut } from '../supabase/auth'
+import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Globe, Moon, Sun, LogOut, ChevronRight, Shield, CreditCard, CircleHelp, FileText } from 'lucide-react';
+import GlassCard from '@/components/okada/GlassCard';
+import HexagonAvatar from '@/components/okada/HexagonAvatar';
+import BottomNav from '@/components/okada/BottomNav';
+import { Switch } from '@/components/ui/switch';
+import { useAuth } from '@/hooks/useAuth';
+import { getProfile, updateProfile } from '@/supabase/db/profile';
 
-const stats = [
-  { label: 'TRIPS', value: '128', icon: 'moped' },
-  { label: 'DISTANCE', value: '312km', icon: 'route' },
-  { label: 'SAVED', value: 'GHS 1.2k', icon: 'savings' },
-]
-
-const settingsConfig = [
-  { key: 'notifications', icon: 'notifications', label: 'Push Notifications', desc: 'Real-time ride updates' },
-  { key: 'location', icon: 'my_location', label: 'Location Services', desc: 'High accuracy tracking' },
-  { key: 'biometric', icon: 'fingerprint', label: 'Biometric Login', desc: 'Face ID / Fingerprint' },
-]
-
-const supportLinks = [
-  { icon: 'help', label: 'Help Center' },
-  { icon: 'description', label: 'Terms of Service' },
-]
+const menuItems = [
+  { icon: CreditCard, label: 'Payment Methods', path: '/payment' },
+  { icon: Shield, label: 'Safety', path: null },
+  { icon: FileText, label: 'Ride History', path: null },
+  { icon: CircleHelp, label: 'Help & Support', path: null },
+];
 
 export default function Profile() {
-  const navigate = useNavigate()
-  const { user, theme, toggleTheme } = useAuth()
-  const [toggles, setToggles] = useState({ notifications: true, location: true, biometric: false })
-  const toggle = (key) => setToggles(prev => ({ ...prev, [key]: !prev[key] }))
-  const isDark = theme === 'dark'
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const [notifications, setNotifications] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [isDark, setIsDark] = useState(
+    document.documentElement.classList.contains('dark')
+  );
 
-  const handleLogout = async () => {
-    await signOut()
-    navigate('/login', { replace: true })
-  }
+  useEffect(() => {
+    if (user?.id) {
+      getProfile(user.id).then(setProfile);
+    }
+  }, [user]);
+
+  const toggleTheme = () => {
+    document.documentElement.classList.toggle('dark');
+    setIsDark((prev) => !prev);
+  };
+
+  const handleNotifToggle = (val) => {
+    setNotifications(val);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login', { replace: true });
+  };
+
+  const displayUser = profile || user || {};
 
   return (
-    <div className="min-h-screen bg-background text-on-surface pb-28">
-      {/* Header */}
-      <header
-        className="fixed top-0 left-0 w-full z-40 px-5 py-4 flex items-center justify-between border-b border-theme-subtle"
-        style={{ background: 'var(--glass-bg-header)', backdropFilter: 'blur(16px)' }}
-      >
-        <h2 className="font-display font-bold text-lg uppercase tracking-[0.2em] text-on-surface">SYSTEM</h2>
-        <div
-          className="px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.1em] text-neon-cyan"
-          style={{ background: 'rgba(0,243,255,0.08)', border: '1px solid rgba(0,243,255,0.25)' }}
+    <div className="min-h-screen bg-background kente-bg pb-24">
+      <div className="max-w-lg mx-auto px-5 pt-8">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center mb-8"
         >
-          NEO-OKADA OS v2.4
-        </div>
-      </header>
-
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pt-20 px-4 space-y-5">
-        {/* Avatar section */}
-        <div className="flex flex-col items-center py-4">
           <div className="relative mb-4">
-            <div className="absolute -inset-3 bg-gradient-to-tr from-neon-cyan to-neon-magenta rounded-full blur-md opacity-50 pointer-events-none" />
-            <div
-              className="relative w-28 h-28 rounded-full p-0.5"
-              style={{ background: 'linear-gradient(135deg, #00f3ff, #ff00ff)' }}
-            >
-              <div className="w-full h-full rounded-full overflow-hidden bg-background flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary text-5xl" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+              className="absolute -inset-2 rounded-full border border-primary/30"
+            />
+            <HexagonAvatar
+              src={displayUser.avatar_url || 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=150&h=150&fit=crop'}
+              alt="User"
+              size={96}
+              glow
+            />
+          </div>
+          <h2 className="text-2xl font-heading font-bold">{displayUser.full_name || 'Loading...'}</h2>
+          <p className="text-muted-foreground font-body text-sm">{displayUser.phone || ''}</p>
+        </motion.div>
+        <GlassCard neon className="mb-4 !p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <motion.div
+                animate={{ rotate: isDark ? 180 : 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center"
+              >
+                {isDark ? <Moon size={18} className="text-primary-foreground" /> : <Sun size={18} className="text-primary-foreground" />}
+              </motion.div>
+              <div>
+                <p className="font-heading font-semibold text-sm">Dark Mode</p>
+                <p className="text-xs text-muted-foreground font-body">{isDark ? 'Interstellar' : 'Pearl White'}</p>
               </div>
             </div>
-            <button
-              className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(0,243,255,0.12)', border: '1px solid rgba(0,243,255,0.4)', backdropFilter: 'blur(12px)' }}
-            >
-              <span className="material-symbols-outlined text-neon-cyan text-sm">photo_camera</span>
-            </button>
+            <Switch checked={isDark} onCheckedChange={toggleTheme} />
           </div>
-          <h3 className="font-display text-2xl font-bold text-on-surface uppercase">
-            {user?.user_metadata?.full_name || user?.email?.split('@')[0]?.toUpperCase() || 'PILOT'}
-          </h3>
-          <div className="flex items-center gap-1 mt-1">
-            <span className="material-symbols-outlined text-neon-cyan text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>grade</span>
-            <p className="text-sm text-neon-cyan font-bold">ELITE PILOT · 4.98 · NEO-ACCRA</p>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          {stats.map(({ label, value, icon }) => (
-            <div
-              key={label}
-              className="flex flex-col items-center p-4 rounded-2xl"
-              style={{ background: 'var(--glass-bg-card)', border: '1px solid var(--glass-border-subtle)', backdropFilter: 'blur(12px)' }}
-            >
-              <span className="material-symbols-outlined text-primary text-2xl mb-2">{icon}</span>
-              <p className="font-display font-bold text-xl text-on-surface">{value}</p>
-              <p className="text-[10px] text-on-surface-variant uppercase tracking-[0.1em] mt-0.5">{label}</p>
+        </GlassCard>
+        <GlassCard className="mb-4 !p-4" animate={false}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl glass flex items-center justify-center">
+                <Bell size={18} className="text-primary" />
+              </div>
+              <div>
+                <p className="font-heading font-semibold text-sm">Notifications</p>
+                <p className="text-xs text-muted-foreground font-body">{notifications ? 'Enabled' : 'Disabled'}</p>
+              </div>
             </div>
+            <Switch checked={notifications} onCheckedChange={handleNotifToggle} />
+          </div>
+        </GlassCard>
+        <GlassCard className="mb-4 !p-4" animate={false}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl glass flex items-center justify-center">
+                <Globe size={18} className="text-secondary" />
+              </div>
+              <div>
+                <p className="font-heading font-semibold text-sm">Language</p>
+                <p className="text-xs text-muted-foreground font-body">English</p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </div>
+        </GlassCard>
+        <div className="space-y-2 mb-8">
+          {menuItems.map((item, i) => (
+            <motion.button
+              key={item.label}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+              onClick={() => item.path && navigate(item.path)}
+              className="w-full text-left"
+            >
+              <GlassCard className="!p-4 flex items-center justify-between" animate={false}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl glass flex items-center justify-center">
+                    <item.icon size={18} className="text-muted-foreground" />
+                  </div>
+                  <span className="font-heading font-medium text-sm">{item.label}</span>
+                </div>
+                <ChevronRight size={18} className="text-muted-foreground" />
+              </GlassCard>
+            </motion.button>
           ))}
         </div>
-
-        {/* System settings */}
-        <section>
-          <h4 className="font-display font-bold uppercase tracking-[0.2em] text-[10px] text-neon-cyan mb-3">System Settings</h4>
-          <div className="space-y-2">
-            {settingsConfig.map(({ key, icon, label, desc }) => {
-              const active = toggles[key]
-              return (
-                <div
-                  key={key}
-                  className="p-4 rounded-2xl flex items-center justify-between"
-                  style={{
-                    backdropFilter: 'blur(12px)',
-                    background: 'var(--glass-bg-card)',
-                    border: active ? '1px solid rgba(208,188,255,0.2)' : '1px solid var(--glass-border-subtle)',
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="p-2.5 rounded-xl"
-                      style={{
-                        background: active ? 'rgba(208,188,255,0.15)' : 'var(--glass-bg-card)',
-                        color: active ? 'var(--color-primary)' : 'var(--color-outline)',
-                      }}
-                    >
-                      <span className="material-symbols-outlined">{icon}</span>
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-on-surface">{label}</p>
-                      <p className="text-[10px] text-on-surface-variant">{desc}</p>
-                    </div>
-                  </div>
-                  <PulsingToggle active={active} onToggle={() => toggle(key)} />
-                </div>
-              )
-            })}
-
-            {/* Theme toggle */}
-            <div
-              className="p-4 rounded-2xl flex items-center justify-between"
-              style={{
-                backdropFilter: 'blur(12px)',
-                background: 'var(--glass-bg-card)',
-                border: isDark ? '1px solid rgba(208,188,255,0.2)' : '1px solid var(--glass-border-subtle)',
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="p-2.5 rounded-xl"
-                  style={{
-                    background: isDark ? 'rgba(208,188,255,0.15)' : 'var(--glass-bg-card)',
-                    color: isDark ? 'var(--color-primary)' : 'var(--color-outline)',
-                  }}
-                >
-                  <span className="material-symbols-outlined">{isDark ? 'dark_mode' : 'light_mode'}</span>
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-on-surface">{isDark ? 'Dark Mode' : 'Light Mode'}</p>
-                  <p className="text-[10px] text-on-surface-variant">Toggle display theme</p>
-                </div>
-              </div>
-              <PulsingToggle active={isDark} onToggle={toggleTheme} />
-            </div>
-          </div>
-        </section>
-
-        {/* Support */}
-        <section>
-          <h4 className="font-display font-bold uppercase tracking-[0.2em] text-[10px] text-neon-cyan mb-3">Support &amp; Protocol</h4>
-          <div className="space-y-2">
-            {supportLinks.map(({ icon, label }) => (
-              <button
-                key={label}
-                className="w-full p-4 rounded-2xl flex items-center justify-between transition-all active:scale-[0.98]"
-                style={{ backdropFilter: 'blur(12px)', background: 'var(--glass-bg-card)', border: '1px solid var(--glass-border-subtle)' }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl" style={{ background: 'var(--glass-bg-card)', color: 'var(--color-outline)' }}>
-                    <span className="material-symbols-outlined">{icon}</span>
-                  </div>
-                  <p className="font-bold text-sm text-on-surface">{label}</p>
-                </div>
-                <span className="material-symbols-outlined text-on-surface-variant text-sm">chevron_right</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <button
-          onClick={handleLogout}
-          className="w-full py-4 font-bold text-error rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all"
-          style={{
-            background: 'rgba(242,184,181,0.08)',
-            border: '1px solid rgba(242,184,181,0.25)',
-            boxShadow: '0 0 15px rgba(186,26,26,0.1)',
-          }}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={handleSignOut}
+          className="w-full py-4 rounded-xl bg-accent/10 text-accent font-heading font-semibold flex items-center justify-center gap-2 min-h-[48px]"
         >
-          <span className="material-symbols-outlined">logout</span>
-          Disconnect
-        </button>
-      </motion.div>
-
+          <LogOut size={18} />
+          Sign Out
+        </motion.button>
+      </div>
       <BottomNav />
     </div>
-  )
+  );
 }

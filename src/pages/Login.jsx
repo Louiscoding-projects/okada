@@ -1,128 +1,130 @@
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
-import AuthLayout from '../components/AuthLayout'
-import GoogleIcon from '../components/GoogleIcon'
-import { signInWithGoogle } from '../supabase/auth'
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
+import AuthLayout from "@/components/AuthLayout";
+import GoogleIcon from "@/components/GoogleIcon";
+import { signInWithEmail, signInWithGoogle } from "@/supabase/auth";
 
 export default function Login() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await signInWithEmail(email, password);
+      navigate("/home", { replace: true });
+    } catch (err) {
+      setError(err.message || "Invalid email or password");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogle = async () => {
-    await signInWithGoogle()
-  }
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      setError(err.message || "Google sign in failed");
+    }
+  };
 
   return (
-    <AuthLayout>
-      <div
-        className="w-full p-8 rounded-[40px] shadow-2xl relative overflow-hidden"
-        style={{
-          backdropFilter: 'blur(20px)',
-          background: 'var(--glass-bg)',
-          border: '1px solid var(--glass-border)',
-        }}
+    <AuthLayout
+      icon={LogIn}
+      title="Welcome back"
+      subtitle="Log in to your account"
+      footer={
+        <>
+          Don't have an account?{" "}
+          <Link to="/register" className="text-primary font-medium hover:underline">
+            Create one
+          </Link>
+        </>
+      }
+    >
+      <Button
+        variant="outline"
+        className="w-full h-12 text-sm font-medium mb-6"
+        onClick={handleGoogle}
       >
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-neon-cyan/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-neon-magenta/30 to-transparent" />
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-[60px] rounded-full pointer-events-none" />
+        <GoogleIcon className="w-5 h-5 mr-2" />
+        Continue with Google
+      </Button>
 
-        <div className="relative z-10 space-y-8">
-          {/* Logo */}
-          <div className="text-center space-y-2">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              style={{
-                background: 'rgba(208,188,255,0.1)',
-                border: '1px solid rgba(208,188,255,0.25)',
-                boxShadow: '0 0 25px rgba(208,188,255,0.15)',
-              }}
-            >
-              <span className="material-symbols-outlined text-primary" style={{ fontSize: '28px' }}>
-                moped
-              </span>
-            </div>
-            <h1 className="font-display text-3xl font-bold text-on-surface tracking-[0.15em] uppercase">OKADA</h1>
-            <p className="text-sm text-on-surface-variant">Jack in to the Neo-Accra network</p>
-          </div>
-
-          {/* Options */}
-          <div className="space-y-3">
-            {/* Phone login */}
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => navigate('/login/phone')}
-              className="w-full h-14 rounded-2xl font-display font-bold text-base relative overflow-hidden group transition-all flex items-center justify-center gap-3"
-              style={{
-                background: 'var(--color-primary)',
-                color: 'var(--color-on-primary)',
-                boxShadow: '0 0 0 rgba(208,188,255,0)',
-              }}
-              whileHover={{ boxShadow: '0 0 25px rgba(208,188,255,0.5)' }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              <span className="material-symbols-outlined text-[20px]">smartphone</span>
-              JACK IN WITH PHONE
-            </motion.button>
-
-            {/* Google login */}
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={handleGoogle}
-              className="w-full h-14 rounded-2xl font-display font-bold text-sm relative overflow-hidden group transition-all flex items-center justify-center gap-3"
-              style={{
-                background: 'var(--glass-bg-card)',
-                border: '1px solid var(--glass-border)',
-                color: 'var(--color-on-surface)',
-              }}
-              whileHover={{ borderColor: 'rgba(255,255,255,0.2)' }}
-            >
-              <GoogleIcon size={20} />
-              CONTINUE WITH GOOGLE
-            </motion.button>
-          </div>
-
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center gap-4 w-full">
-              <div className="h-px flex-grow" style={{ background: 'var(--glass-border)' }} />
-              <span className="text-[10px] text-on-surface-variant uppercase tracking-[0.3em]">Or use</span>
-              <div className="h-px flex-grow" style={{ background: 'var(--glass-border)' }} />
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex flex-col items-center gap-2 group"
-            >
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center transition-all"
-                style={{
-                  border: '1px solid rgba(0,243,255,0.3)',
-                  background: 'rgba(0,243,255,0.08)',
-                  boxShadow: '0 0 15px rgba(0,243,255,0.1)',
-                }}
-              >
-                <span className="material-symbols-outlined text-neon-cyan" style={{ fontSize: '32px' }}>
-                  fingerprint
-                </span>
-              </div>
-              <span className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">
-                Biometric Login
-              </span>
-            </motion.button>
-          </div>
-
-          <div className="text-center space-y-2">
-            <p className="text-xs text-on-surface-variant">
-              New to OKADA?{' '}
-              <button
-                onClick={() => navigate('/register')}
-                className="text-primary font-bold hover:underline"
-              >
-                Create account
-              </button>
-            </p>
-          </div>
+      <div className="relative mb-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-3 text-muted-foreground">or</span>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              autoFocus
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Logging in...
+            </>
+          ) : (
+            "Log in"
+          )}
+        </Button>
+      </form>
     </AuthLayout>
-  )
+  );
 }

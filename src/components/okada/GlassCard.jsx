@@ -1,18 +1,27 @@
-export default function GlassCard({ children, className = '', style = {}, topAccent = true }) {
+import React from 'react';
+import { motion } from 'motion/react';
+import { cn } from '@/lib/utils';
+
+export default function GlassCard({ children, className, neon, animate = true, ...props }) {
+  const Comp = animate ? motion.div : 'div';
+  const animProps = animate ? {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.4, ease: 'easeOut' },
+    whileHover: { y: -2, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' },
+  } : {};
+
   return (
-    <div
-      className={`rounded-3xl relative overflow-hidden ${className}`}
-      style={{
-        backdropFilter: 'blur(20px)',
-        background: 'var(--glass-bg)',
-        border: '1px solid var(--glass-border)',
-        ...style,
-      }}
-    >
-      {topAccent && (
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent pointer-events-none" />
+    <Comp
+      className={cn(
+        'glass rounded-2xl p-5 transition-all duration-300',
+        neon && 'neon-border',
+        className
       )}
+      {...animProps}
+      {...props}
+    >
       {children}
-    </div>
-  )
+    </Comp>
+  );
 }

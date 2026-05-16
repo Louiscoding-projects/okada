@@ -1,164 +1,273 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
-import BottomNav from '../components/okada/BottomNav'
-import PulsingToggle from '../components/okada/PulsingToggle'
-import { useAuth } from '../context/AuthContext'
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { DollarSign, TrendingUp, Navigation, Clock, User, X, Check, Bike } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import GlassCard from '@/components/okada/GlassCard';
+import GradientButton from '@/components/okada/GradientButton';
+import PulsingToggle from '@/components/okada/PulsingToggle';
+import HexagonAvatar from '@/components/okada/HexagonAvatar';
+import { useAuth } from '@/hooks/useAuth';
+import { getRiderProfile, updateRiderStatus } from '@/supabase/db/riders';
+import { getAvailableTrips, updateTripStatus } from '@/supabase/db/trips';
 
-const recentTrips = [
-  { from: 'Osu', to: 'Accra Mall', fare: 28.5, time: 'Today 9:30am', rating: 5 },
-  { from: 'Kotoka Airport', to: 'Cantonments', fare: 45.0, time: 'Yesterday 2pm', rating: 5 },
-  { from: 'Tema', to: 'Labadi', fare: 62.0, time: 'Mon 6pm', rating: 4 },
-]
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="glass rounded-lg px-3 py-2 text-xs font-heading neon-border">
+      <p>{label}: <span className="font-bold">GH₵ {payload[0].value}</span></p>
+    </div>
+  );
+};
+
+const weeklyData = [
+  { day: 'Mon', amount: 45 },
+  { day: 'Tue', amount: 62 },
+  { day: 'Wed', amount: 38 },
+  { day: 'Thu', amount: 71 },
+  { day: 'Fri', amount: 89 },
+  { day: 'Sat', amount: 95 },
+  { day: 'Sun', amount: 54 },
+];
 
 export default function RiderDashboard() {
-  const navigate = useNavigate()
-  const { user } = useAuth()
-  const [online, setOnline] = useState(false)
-  const [activeRequest, setActiveRequest] = useState(null)
+  const { user } = useAuth();
+  const [isOnline, setIsOnline] = useState(false);
+  const [showRequest, setShowRequest] = useState(false);
+  const [requestCountdown, setRequestCountdown] = useState(30);
+  const [riderProfile, setRiderProfile] = useState(null);
+  const [incomingRequest, setIncomingRequest] = useState(null);
+  const [availableTrips, setAvailableTrips] = useState([]);
+
+  useEffect(() => {
+    if (!user) return;
+    getRiderProfile(user.id).then(({ data }) => {
+      if (data) setRiderProfile(data);
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    updateRiderStatus(user.id, isOnline);
+    if (isOnline) {
+      getAvailableTrips().then(({ data }) => {
+        if (data && data.length > 0) {
+          setIncomingRequest(data[0]);
+          setShowRequest(true);
+        }
+      });
+    } else {
+      setShowRequest(false);
+    }
+  }, [isOnline, user]);
+
+  useEffect(() => {
+    if (!showRequest) { setRequestCountdown(30); return; }
+    const t = setInterval(() => {
+      setRequestCountdown(c => {
+        if (c <= 1) { setShowRequest(false); return 30; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [showRequest]);
+
+  const handleAccept = async () => {
+    if (incomingRequest && user) {
+      await updateTripStatus(incomingRequest.id, 'accepted');
+    }
+    setShowRequest(false);
+  };
+
+  const handleDecline = () => {
+    setShowRequest(false);
+  };
 
   return (
-    <div className="min-h-screen bg-background text-on-surface pb-28">
-      {/* Header */}
-      <header
-        className="fixed top-0 w-full z-40 px-5 py-4 flex items-center justify-between border-b border-theme-subtle"
-        style={{ background: 'var(--glass-bg-header)', backdropFilter: 'blur(16px)' }}
-      >
-        <h2 className="font-display font-bold text-lg uppercase tracking-[0.2em] text-on-surface">RIDER HQ</h2>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-on-surface-variant font-bold uppercase">{online ? 'ONLINE' : 'OFFLINE'}</span>
-          <PulsingToggle active={online} onToggle={() => setOnline(o => !o)} />
-        </div>
-      </header>
-
-      <div className="pt-20 px-4 space-y-5">
-        {/* Status banner */}
+    <div className="min-h-screen bg-background kente-bg">
+      <div className="max-w-lg mx-auto px-5 pt-8 pb-8">
         <motion.div
-          animate={{ borderColor: online ? 'rgba(0,243,255,0.4)' : 'rgba(255,255,255,0.08)' }}
-          className="p-4 rounded-2xl flex items-center gap-4"
-          style={{
-            background: online ? 'rgba(0,243,255,0.06)' : 'var(--glass-bg-card)',
-            border: '1px solid',
-          }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between mb-8"
         >
-          <div className="relative w-3 h-3 flex-shrink-0">
-            {online && <span className="absolute inset-0 bg-neon-cyan rounded-full animate-ping opacity-75" />}
-            <span className="relative block w-3 h-3 rounded-full" style={{ background: online ? '#00f3ff' : 'var(--color-outline)' }} />
-          </div>
           <div>
-            <p className="font-display font-bold text-on-surface">{online ? 'ACCEPTING RIDES' : 'YOU\'RE OFFLINE'}</p>
-            <p className="text-xs text-on-surface-variant">{online ? 'Passengers can find you now' : 'Toggle to start earning'}</p>
+            <h1 className="text-2xl font-heading font-bold gradient-text">Rider Hub</h1>
+            <p className="text-muted-foreground font-body text-sm">
+              Welcome back, {riderProfile?.full_name?.split(' ')[0] || 'Rider'}
+            </p>
           </div>
+          <HexagonAvatar
+            src={riderProfile?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop'}
+            alt="Rider"
+            size={48}
+          />
         </motion.div>
 
-        {/* Today's earnings */}
-        <div
-          className="relative rounded-3xl p-6 overflow-hidden"
-          style={{
-            background: 'var(--balance-card-bg)',
-            border: '1px solid rgba(208,188,255,0.2)',
-          }}
-        >
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
-          <p className="text-[10px] font-bold tracking-[0.3em] text-primary/70 mb-1 uppercase">Today's Earnings</p>
-          <h3 className="font-display text-4xl font-bold text-on-surface mb-4">GHS 135.50</h3>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            {[
-              { label: 'TRIPS', value: '4' },
-              { label: 'HOURS', value: '3.5' },
-              { label: 'RATING', value: '4.97' },
-            ].map(({ label, value }) => (
-              <div key={label} className="p-2 rounded-xl" style={{ background: 'rgba(0,0,0,0.2)' }}>
-                <p className="font-display font-bold text-on-surface">{value}</p>
-                <p className="text-[9px] text-on-surface-variant uppercase tracking-wider">{label}</p>
-              </div>
-            ))}
-          </div>
+        <div className="flex justify-center mb-8">
+          <PulsingToggle
+            active={isOnline}
+            onToggle={() => setIsOnline(!isOnline)}
+          />
         </div>
 
-        {/* Incoming request (demo) */}
-        {online && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-5 rounded-3xl relative overflow-hidden"
-            style={{
-              background: 'rgba(208,188,255,0.08)',
-              border: '1px solid rgba(208,188,255,0.3)',
-              boxShadow: '0 0 20px rgba(208,188,255,0.1)',
-            }}
-          >
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-bold tracking-[0.2em] text-primary uppercase">New Request</p>
-              <div className="flex items-center gap-1 text-neon-cyan">
-                <span className="material-symbols-outlined text-sm">schedule</span>
-                <span className="text-xs font-bold">0.8 km away</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 mb-4">
-              <span className="material-symbols-outlined text-primary">my_location</span>
-              <div>
-                <p className="font-bold text-on-surface text-sm">Osu Oxford Street</p>
-                <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-neon-magenta text-sm">arrow_downward</span>
-                  <p className="text-xs text-on-surface-variant">Accra Mall · 4.2 km · GHS 28.50</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate('/tracking/incoming')}
-                className="flex-1 h-12 rounded-xl font-display font-bold text-sm"
-                style={{ background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}
-              >
-                ACCEPT
-              </button>
-              <button
-                className="flex-1 h-12 rounded-xl font-display font-bold text-sm"
-                style={{ background: 'var(--glass-bg-card)', border: '1px solid var(--glass-border)', color: 'var(--color-on-surface-variant)' }}
-              >
-                DECLINE
-              </button>
-            </div>
-          </motion.div>
-        )}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {[
+            { label: 'Earnings', value: 'GH₵ 0', icon: DollarSign, color: 'text-primary' },
+            { label: 'Trips', value: riderProfile?.total_rides ?? '0', icon: Bike, color: 'text-secondary' },
+            { label: 'Rating', value: riderProfile?.rating ?? '—', icon: Clock, color: 'text-accent' },
+          ].map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <GlassCard className="text-center !p-3" animate={false}>
+                <stat.icon size={18} className={`mx-auto mb-1 ${stat.color}`} />
+                <p className="font-heading font-bold text-lg">{stat.value}</p>
+                <p className="text-[10px] text-muted-foreground font-body">{stat.label}</p>
+              </GlassCard>
+            </motion.div>
+          ))}
+        </div>
 
-        {/* Recent trips */}
-        <section>
-          <h4 className="font-display font-bold uppercase tracking-[0.2em] text-[10px] text-neon-cyan mb-3">Recent Trips</h4>
-          <div className="space-y-2">
-            {recentTrips.map((trip, i) => (
-              <div
-                key={i}
-                className="p-4 rounded-2xl flex items-center gap-3"
-                style={{ background: 'var(--glass-bg-card)', border: '1px solid var(--glass-border-subtle)', backdropFilter: 'blur(12px)' }}
-              >
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(0,243,255,0.1)', color: '#00f3ff' }}
-                >
-                  <span className="material-symbols-outlined text-sm">navigation</span>
-                </div>
-                <div className="flex-grow min-w-0">
-                  <p className="font-bold text-sm text-on-surface truncate">{trip.from} → {trip.to}</p>
-                  <p className="text-[10px] text-on-surface-variant">{trip.time}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="font-bold text-sm text-neon-cyan">GHS {trip.fare.toFixed(2)}</p>
-                  <div className="flex items-center gap-0.5 justify-end">
-                    {Array.from({ length: trip.rating }).map((_, j) => (
-                      <span key={j} className="material-symbols-outlined text-[12px]" style={{ color: '#ffc107', fontVariationSettings: "'FILL' 1" }}>star</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
+        <GlassCard neon className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-heading font-semibold">Weekly Earnings</h3>
+            <div className="flex items-center gap-1 text-primary text-sm">
+              <TrendingUp size={14} />
+              <span className="font-heading font-semibold">+12%</span>
+            </div>
           </div>
-        </section>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyData}>
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} cursor={false} />
+                <Bar dataKey="amount" fill="url(#bar-gradient)" radius={[6, 6, 0, 0]} maxBarSize={32} />
+                <defs>
+                  <linearGradient id="bar-gradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" />
+                    <stop offset="100%" stopColor="hsl(var(--secondary))" />
+                  </linearGradient>
+                </defs>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="mb-6" animate={false}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground font-body uppercase tracking-wider">Available Balance</p>
+              <p className="text-2xl font-heading font-bold gradient-text">GH₵ 0.00</p>
+            </div>
+            <GradientButton size="sm" className="text-sm">
+              Cash Out
+            </GradientButton>
+          </div>
+        </GlassCard>
+
+        {isOnline && !showRequest && (
+          <GradientButton variant="accent" className="w-full flex items-center justify-center gap-2 mb-4" size="lg">
+            <Navigation size={18} />
+            Navigate to Pickup
+          </GradientButton>
+        )}
       </div>
 
-      <BottomNav />
+      <AnimatePresence>
+        {showRequest && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-end justify-center p-4"
+          >
+            <motion.div
+              initial={{ y: 200 }}
+              animate={{ y: 0 }}
+              exit={{ y: 200 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="w-full max-w-lg"
+            >
+              <GlassCard neon className="relative">
+                <div className="flex justify-center mb-4">
+                  <div className="relative w-16 h-16">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="42" stroke="hsl(var(--muted))" strokeWidth="4" fill="none" />
+                      <circle
+                        cx="50" cy="50" r="42"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 42}`}
+                        strokeDashoffset={2 * Math.PI * 42 * (1 - requestCountdown / 30)}
+                        className="transition-all duration-1000"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="font-heading font-bold">{requestCountdown}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center mb-4">
+                  <h3 className="font-heading font-bold text-lg">New Ride Request</h3>
+                </div>
+
+                <div className="flex items-center gap-3 mb-4">
+                  <HexagonAvatar
+                    src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=80&h=80&fit=crop"
+                    alt="Passenger"
+                    size={48}
+                  />
+                  <div>
+                    <p className="font-heading font-semibold">Passenger</p>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <User size={10} />
+                      New request
+                    </div>
+                  </div>
+                  <div className="ml-auto text-right">
+                    <p className="font-heading font-bold text-lg gradient-text">
+                      GH₵ {incomingRequest?.fare || '—'}
+                    </p>
+                  </div>
+                </div>
+
+                <GlassCard animate={false} className="!p-3 mb-4 text-sm">
+                  <div className="flex items-start gap-2 mb-2">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                    <p className="font-body">{incomingRequest?.pickup_address || '—'}</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
+                    <p className="font-body">{incomingRequest?.dropoff_address || '—'}</p>
+                  </div>
+                </GlassCard>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleDecline}
+                    className="py-3 rounded-xl glass border border-accent/30 text-accent font-heading font-semibold flex items-center justify-center gap-2 min-h-[48px]"
+                  >
+                    <X size={18} />
+                    Decline
+                  </motion.button>
+                  <GradientButton onClick={handleAccept} className="flex items-center justify-center gap-2">
+                    <Check size={18} />
+                    Accept
+                  </GradientButton>
+                </div>
+              </GlassCard>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
-  )
+  );
 }

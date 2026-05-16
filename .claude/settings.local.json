@@ -14,7 +14,9 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Lenovo\\\\desktop\\\\okada\\\\src\\\\context\")",
       "PowerShell(Get-Process *)",
       "Bash(curl -s http://localhost:3000)",
-      "Bash(npx supabase *)"
+      "Bash(npx supabase *)",
+      "PowerShell(npm run *)",
+      "Bash(Test-Path *)"
     ]
   }
 }

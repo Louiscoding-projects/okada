@@ -1,18 +1,13 @@
 import { supabase } from '../client'
 
-export const getWalletBalance = (userId) =>
-  supabase.from('wallets').select('balance').eq('user_id', userId).single()
+export const createPayment = (paymentData) =>
+  supabase.from('payments').insert(paymentData).select().single()
 
-export const getTransactions = (userId, limit = 20) =>
-  supabase
-    .from('transactions')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(limit)
+export const getPayment = (paymentId) =>
+  supabase.from('payments').select('*').eq('id', paymentId).single()
 
-export const createTransaction = (data) =>
-  supabase.from('transactions').insert(data).select().single()
+export const getTripPayment = (tripId) =>
+  supabase.from('payments').select('*').eq('trip_id', tripId).single()
 
-export const topUpWallet = (userId, amount, provider) =>
-  supabase.rpc('top_up_wallet', { user_id: userId, amount, provider })
+export const updatePaymentStatus = (paymentId, status) =>
+  supabase.from('payments').update({ status }).eq('id', paymentId).select().single()

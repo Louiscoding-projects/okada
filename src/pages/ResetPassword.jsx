@@ -1,97 +1,101 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import AuthLayout from '../components/AuthLayout'
-import GradientButton from '../components/okada/GradientButton'
-import { updatePassword } from '../supabase/auth'
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Lock, Loader2, AlertTriangle } from "lucide-react";
+import AuthLayout from "@/components/AuthLayout";
+import { supabase } from "@/supabase/client";
 
 export default function ResetPassword() {
-  const navigate = useNavigate()
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [done, setDone] = useState(false)
+  const navigate = useNavigate();
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
-    if (password !== confirm) { setError('Passwords do not match'); return }
-    if (password.length < 8) { setError('Password must be at least 8 characters'); return }
-    setLoading(true)
-    setError('')
-    const { error: err } = await updatePassword(password)
-    setLoading(false)
-    if (err) {
-      setError(err.message)
-    } else {
-      setDone(true)
-      setTimeout(() => navigate('/home', { replace: true }), 2000)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
     }
-  }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (error) throw error;
+      navigate("/login", { replace: true });
+    } catch (err) {
+      setError(err.message || "Failed to reset password");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <AuthLayout>
-      <div
-        className="w-full p-8 rounded-[40px] shadow-2xl relative overflow-hidden"
-        style={{
-          backdropFilter: 'blur(20px)',
-          background: 'var(--glass-bg)',
-          border: '1px solid var(--glass-border)',
-        }}
-      >
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-
-        <div className="relative z-10 space-y-6">
-          <div className="text-center space-y-2">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto"
-              style={{ background: 'rgba(208,188,255,0.1)', border: '1px solid rgba(208,188,255,0.25)' }}
-            >
-              <span className="material-symbols-outlined text-primary" style={{ fontSize: '28px', fontVariationSettings: "'FILL' 1" }}>
-                lock_reset
-              </span>
-            </div>
-            <h1 className="font-display text-xl font-bold text-on-surface tracking-[0.15em] uppercase">NEW ACCESS KEY</h1>
-            <p className="text-xs text-on-surface-variant">Set your new password</p>
-          </div>
-
-          {done ? (
-            <div className="text-center py-6 space-y-3">
-              <span className="material-symbols-outlined text-neon-cyan text-5xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                verified
-              </span>
-              <p className="font-display font-bold text-on-surface">Access Restored</p>
-              <p className="text-xs text-on-surface-variant">Redirecting...</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {[
-                { id: 'password', value: password, setter: setPassword, placeholder: 'New password' },
-                { id: 'confirm', value: confirm, setter: setConfirm, placeholder: 'Confirm password' },
-              ].map(({ id, value, setter, placeholder }) => (
-                <div key={id} className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-neon-cyan to-primary rounded-2xl opacity-0 group-focus-within:opacity-20 blur transition duration-500" />
-                  <div
-                    className="relative flex items-center rounded-2xl"
-                    style={{ background: 'var(--input-bg)', border: '1px solid var(--glass-border)' }}
-                  >
-                    <span className="material-symbols-outlined text-on-surface-variant/60 ml-4 text-[20px]">lock</span>
-                    <input
-                      type="password"
-                      placeholder={placeholder}
-                      value={value}
-                      onChange={e => setter(e.target.value)}
-                      className="w-full h-12 px-3 bg-transparent text-on-surface outline-none placeholder:text-on-surface-variant/40 font-display"
-                    />
-                  </div>
-                </div>
-              ))}
-              {error && <p className="text-xs text-error">{error}</p>}
-              <GradientButton onClick={handleSubmit} loading={loading} disabled={!password || !confirm}>
-                RESET PASSWORD
-              </GradientButton>
-            </div>
-          )}
+    <AuthLayout
+      icon={Lock}
+      title="New password"
+      subtitle="Enter your new password below"
+      footer={
+        <Link to="/login" className="text-primary font-medium hover:underline">
+          Back to log in
+        </Link>
+      }
+    >
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          {error}
         </div>
-      </div>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="password">New Password</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              autoFocus
+              placeholder="••••••••"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirm">Confirm Password</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="confirm"
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Resetting...
+            </>
+          ) : (
+            "Reset password"
+          )}
+        </Button>
+      </form>
     </AuthLayout>
-  )
+  );
 }
