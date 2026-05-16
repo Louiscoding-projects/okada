@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue)",
+      "Bash(npx vite *)",
+      "Bash(npx tsc *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":300\")",
+      "Bash(timeout 5)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Lenovo\\\\desktop\\\\okada\\\\src\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Lenovo\\\\desktop\\\\okada\\\\src\\\\components\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Lenovo\\\\desktop\\\\okada\\\\src\\\\context\")",
+      "PowerShell(Get-Process *)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(npx supabase *)"
+    ]
+  }
+}

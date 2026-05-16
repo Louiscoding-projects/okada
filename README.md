@@ -1,20 +1,21 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Okada - Ride Hailing App (Ghana)
 
-# Run and deploy your AI Studio app
+A React + Supabase ride-hailing PWA for Ghana.
 
-This contains everything you need to run your app locally.
+## Stack
+- React + Vite
+- Tailwind CSS + shadcn/ui
+- Supabase (auth + database)
+- React Router v6
+- Framer Motion
 
-View your app in AI Studio: https://ai.studio/apps/987c3a49-9636-4481-b6de-bef7a6e7a878
+## Setup
+1. Clone the repo
+2. Run `npm install`
+3. Copy `.env.example` to `.env`
+4. Add your Supabase URL and anon key
+5. Run `npm run dev`
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Environment Variables
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
